@@ -4,23 +4,16 @@ const API_BASE = 'https://open.faceit.com/data/v4';
 
 // FACEIT の大会（Championship）をFortniteで検索
 export async function fetchFaceitTournaments(apiKey: string): Promise<Tournament[]> {
-  const all: Tournament[] = [];
-
   try {
-    // Championship（大規模大会）を取得
+    // Championship（大規模大会）のみ取得
+    // Hub は /hubs?game=fortnite が404のため除外
     const championships = await fetchChampionships(apiKey);
-    all.push(...championships);
-
-    // Hub（常設コミュニティリーグ）も取得
-    const hubs = await fetchHubs(apiKey);
-    all.push(...hubs);
-
-    console.log(`[FACEIT] championships=${championships.length} hubs=${hubs.length} total=${all.length}`);
+    console.log(`[FACEIT] championships=${championships.length}`);
+    return championships;
   } catch (e) {
     console.error(`[FACEIT] Error: ${e}`);
+    return [];
   }
-
-  return all;
 }
 
 async function fetchChampionships(apiKey: string): Promise<Tournament[]> {
@@ -62,34 +55,3 @@ async function fetchChampionships(apiKey: string): Promise<Tournament[]> {
     }));
 }
 
-async function fetchHubs(apiKey: string): Promise<Tournament[]> {
-  const res = await fetch(
-    `${API_BASE}/hubs?game=fortnite&limit=20&offset=0`,
-    { headers: { Authorization: `Bearer ${apiKey}` } }
-  );
-
-  if (!res.ok) {
-    console.error(`[FACEIT] hubs HTTP ${res.status}`);
-    return [];
-  }
-
-  const data = (await res.json()) as any;
-  const items: any[] = data.items ?? [];
-
-  // Hub は常設リーグなので「次回開催」として扱う
-  return items.map(h => ({
-    id: `faceit_hub_${h.hub_id}`,
-    name: `[FACEIT Hub] ${h.name}`,
-    url: `https://www.faceit.com/ja/hub/${h.hub_id}`,
-    startAt: 0,
-    endAt: 0,
-    isOnline: true,
-    city: undefined,
-    countryCode: h.region === 'JP' ? 'JP' : undefined,
-    numAttendees: h.players_joined ?? 0,
-    events: [],
-    prizePools: [],
-    source: 'faceit' as const,
-    addedAt: Date.now(),
-  }));
-}
