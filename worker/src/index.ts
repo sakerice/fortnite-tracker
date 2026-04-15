@@ -144,21 +144,17 @@ async function handleGetTournaments(url: URL, env: Env): Promise<Response> {
     tournaments = tournaments.filter(t => t.startAt >= fromTs);
   }
 
-  // ソート順: ①今後開催（startAt昇順）→ ②開催中（endAt昇順）→ ③日時未定
+  // 開始日昇順。startAt=0（日時未定）は末尾
+  // 異常に遠い未来（2年超）のテンプレート大会は除外
   const now = Math.floor(Date.now() / 1000);
+  const twoYearsLater = now + 2 * 365 * 86400;
+  tournaments = tournaments.filter(t => t.startAt === 0 || t.startAt <= twoYearsLater);
+
   tournaments.sort((a, b) => {
     if (a.startAt === 0 && b.startAt === 0) return 0;
     if (a.startAt === 0) return 1;
     if (b.startAt === 0) return -1;
-
-    const aOngoing = a.startAt < now && a.endAt > now;
-    const bOngoing = b.startAt < now && b.endAt > now;
-
-    if (!aOngoing && bOngoing) return -1;   // aが今後、bが開催中 → aを先に
-    if (aOngoing && !bOngoing) return 1;    // aが開催中、bが今後 → bを先に
-
-    if (aOngoing && bOngoing) return a.endAt - b.endAt;  // 両方開催中 → 終了日昇順
-    return a.startAt - b.startAt;                         // 両方今後 → 開始日昇順
+    return a.startAt - b.startAt;
   });
 
   return json({ tournaments, total: tournaments.length, lastUpdated });
