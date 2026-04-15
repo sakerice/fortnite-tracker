@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fortnite 大会トラッカー</title>
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --card: #1a1a2e;
+      --accent: #00d4ff;
+      --accent2: #7c3aed;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #2d3748;
+      --prize: #fbbf24;
+      --online: #34d399;
+      --offline: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ヘッダー */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .refresh-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* フィルターバー */
+    .filter-bar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--muted);
+      user-select: none;
+    }
+    .filter-chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(0, 212, 255, 0.1);
+    }
+    .filter-chip input[type="checkbox"] { display: none; }
+    .filter-select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      color: var(--text);
+      cursor: pointer;
+      outline: none;
+    }
+    .filter-select:focus { border-color: var(--accent); }
+    #addBtn {
+      margin-left: auto;
+      background: linear-gradient(135deg, var(--accent2), #4f46e5);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #addBtn:hover { opacity: 0.85; }
+
+    /* メインコンテンツ */
+    main { padding: 20px; max-width: 900px; margin: 0 auto; }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .count { font-weight: 600; color: var(--text); }
+
+    /* 大会カード */
+    .card-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .card-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .card-title a:hover { color: var(--accent); }
+
+    .badges { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .badge-online { background: rgba(52, 211, 153, 0.15); color: var(--online); }
+    .badge-offline { background: rgba(248, 113, 113, 0.15); color: var(--offline); }
+    .badge-prize { background: rgba(251, 191, 36, 0.15); color: var(--prize); }
+    .badge-manual { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
+
+    .card-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .card-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .card-events {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .event-row {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .event-row .event-name { color: var(--text); }
+    .age-badge {
+      background: rgba(124, 58, 237, 0.2);
+      color: #a78bfa;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    /* カード削除ボタン（手動追加分のみ） */
+    .card-delete {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .card-delete:hover { color: var(--offline); }
+
+    /* 空状態 */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* ローディング */
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .modal h2 {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent);
+    }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    .btn-cancel {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-submit {
+      background: linear-gradient(135deg, var(--accent2), #4f46e5);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* エラー */
+    .error-msg {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--offline);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .filter-bar { gap: 8px; }
+      .form-row { flex-direction: column; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚡ Fortnite 大会トラッカー</h1>
+    <div class="header-sub" id="lastUpdated">読み込み中...</div>
+  </div>
+  <button class="refresh-btn" onclick="refreshData()">↻ 更新</button>
+</header>
+
+<div class="filter-bar">
+  <label class="filter-chip" id="chip-online">
+    <input type="checkbox" onchange="applyFilters()">
+    🌐 オンラインのみ
+  </label>
+  <label class="filter-chip" id="chip-prize">
+    <input type="checkbox" onchange="applyFilters()">
+    🏆 賞金あり
+  </label>
+  <select class="filter-select" id="ageFilter" onchange="applyFilters()">
+    <option value="">年齢制限なし</option>
+    <option value="13">13歳以下対応</option>
+    <option value="14">14歳以下対応</option>
+    <option value="15">15歳以下対応</option>
+    <option value="16">16歳以下対応</option>
+    <option value="17">17歳以下対応</option>
+    <option value="18">18歳以下対応</option>
+  </select>
+  <select class="filter-select" id="dateFilter" onchange="applyFilters()">
+    <option value="">期間: すべて</option>
+    <option value="7">今後7日間</option>
+    <option value="30">今後30日間</option>
+    <option value="90">今後3ヶ月</option>
+  </select>
+  <button id="addBtn" onclick="openModal()">＋ 手動追加</button>
+</div>
+
+<main>
+  <div class="status-bar">
+    <span><span class="count" id="countLabel">-</span> 件の大会</span>
+    <span id="filterLabel"></span>
+  </div>
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>大会情報を取得中...</div>
+    </div>
+  </div>
+</main>
+
+<!-- 手動追加モーダル -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>大会を手動追加</h2>
+    <div class="error-msg" id="formError" style="display:none"></div>
+    <div class="form-group">
+      <label>大会名 *</label>
+      <input type="text" id="f-name" placeholder="例: Fortnite Champions Cup">
+    </div>
+    <div class="form-group">
+      <label>URL *</label>
+      <input type="url" id="f-url" placeholder="https://...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>開始日時 *</label>
+        <input type="datetime-local" id="f-startAt">
+      </div>
+      <div class="form-group">
+        <label>終了日時</label>
+        <input type="datetime-local" id="f-endAt">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>形式</label>
+        <select id="f-isOnline">
+          <option value="true">オンライン</option>
+          <option value="false">オフライン</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>都市名（任意）</label>
+        <input type="text" id="f-city" placeholder="Tokyo">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-submit" id="submitBtn" onclick="submitManual()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==============================
+  // 設定: Worker の URL を設定する
+  // ==============================
+  const WORKER_URL = 'https://fortnite-tracker-worker.cwq06831.workers.dev';
+
+  // ==============================
+  // 状態
+  // ==============================
+  let allTournaments = [];
+  let filters = { online: false, prize: false, age: '', days: '' };
+
+  // ==============================
+  // 初期化
+  // ==============================
+  window.addEventListener('DOMContentLoaded', loadTournaments);
+
+  async function loadTournaments() {
+    showLoading();
+    try {
+      const res = await fetch(`${WORKER_URL}/api/tournaments`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      allTournaments = data.tournaments ?? [];
+      updateLastUpdated(data.lastUpdated);
+      applyFilters();
+    } catch (e) {
+      showError('大会情報の取得に失敗しました。Workerの設定を確認してください。');
+      console.error(e);
+    }
+  }
+
+  async function refreshData() {
+    try {
+      await fetch(`${WORKER_URL}/api/refresh`, { method: 'POST' });
+      setTimeout(loadTournaments, 2000); // 2秒後に再取得
+    } catch (e) {
+      await loadTournaments();
+    }
+  }
+
+  // ==============================
+  // フィルター適用
+  // ==============================
+  function applyFilters() {
+    const chipOnline = document.getElementById('chip-online');
+    const chipPrize = document.getElementById('chip-prize');
+    const ageEl = document.getElementById('ageFilter');
+    const dateEl = document.getElementById('dateFilter');
+
+    const wantOnline = chipOnline.querySelector('input').checked;
+    const wantPrize = chipPrize.querySelector('input').checked;
+    const age = ageEl.value;
+    const days = dateEl.value;
+
+    // chip スタイル更新
+    chipOnline.classList.toggle('active', wantOnline);
+    chipPrize.classList.toggle('active', wantPrize);
+
+    let result = allTournaments;
+    const activeFilters = [];
+
+    if (wantOnline) {
+      result = result.filter(t => t.isOnline);
+      activeFilters.push('オンラインのみ');
+    }
+    if (wantPrize) {
+      result = result.filter(t => t.prizePools?.some(p => p.totalAmount > 0));
+      activeFilters.push('賞金あり');
+    }
+    if (age) {
+      const a = parseInt(age);
+      result = result.filter(t =>
+        t.events.length === 0 || t.events.some(e => e.minAge == null || e.minAge <= a)
+      );
+      activeFilters.push(`${age}歳以下対応`);
+    }
+    if (days) {
+      const d = parseInt(days);
+      const limit = Math.floor(Date.now() / 1000) + d * 86400;
+      const now = Math.floor(Date.now() / 1000);
+      result = result.filter(t => t.startAt >= now && t.startAt <= limit);
+      activeFilters.push(`${days}日以内`);
+    }
+
+    document.getElementById('countLabel').textContent = result.length;
+    document.getElementById('filterLabel').textContent =
+      activeFilters.length ? `フィルター: ${activeFilters.join(' / ')}` : '';
+
+    renderCards(result);
+  }
+
+  // ==============================
+  // カード描画
+  // ==============================
+  function renderCards(tournaments) {
+    const el = document.getElementById('content');
+    if (!tournaments.length) {
+      el.innerHTML = `<div class="empty"><div class="icon">🎮</div>
+        <div>大会が見つかりませんでした</div>
+        <div style="font-size:0.8rem;margin-top:8px;">フィルターを変更するか、手動で追加してください</div></div>`;
+      return;
+    }
+
+    el.innerHTML = `<div class="card-list">${tournaments.map(cardHTML).join('')}</div>`;
+  }
+
+  function cardHTML(t) {
+    const startDate = formatDate(t.startAt);
+    const hasPrize = t.prizePools?.some(p => p.totalAmount > 0);
+    const totalPrize = t.prizePools?.reduce((s, p) => s + p.totalAmount, 0) ?? 0;
+    const currency = t.prizePools?.[0]?.currency ?? 'USD';
+    const isManual = t.source === 'manual';
+
+    const badges = [
+      `<span class="badge ${t.isOnline ? 'badge-online' : 'badge-offline'}">${t.isOnline ? '🌐 オンライン' : '📍 オフライン'}</span>`,
+      hasPrize ? `<span class="badge badge-prize">🏆 $${totalPrize.toLocaleString()} ${currency}</span>` : '',
+      isManual ? `<span class="badge badge-manual">✏️ 手動</span>` : '',
+    ].filter(Boolean).join('');
+
+    const location = !t.isOnline && t.city ? `📍 ${t.city}${t.countryCode ? ', ' + t.countryCode : ''}` : '';
+    const attendees = t.numAttendees ? `👥 ${t.numAttendees.toLocaleString()}人` : '';
+
+    const eventsHTML = t.events.length
+      ? `<div class="card-events">${t.events.slice(0, 3).map(e => `
+          <div class="event-row">
+            <span class="event-name">${escHtml(e.name)}</span>
+            ${e.minAge ? `<span class="age-badge">${e.minAge}歳以上</span>` : ''}
+            ${e.numEntrants ? `<span>・${e.numEntrants}人参加</span>` : ''}
+          </div>`).join('')}
+          ${t.events.length > 3 ? `<div class="event-row" style="color:var(--muted)">他 ${t.events.length - 3} イベント...</div>` : ''}
+        </div>` : '';
+
+    const deleteBtn = isManual
+      ? `<button class="card-delete" onclick="deleteTournament('${escHtml(t.id)}')" title="削除">✕</button>`
+      : '';
+
+    return `<div class="card" id="card-${escHtml(t.id)}">
+      <div class="card-header">
+        <div class="card-title">
+          <a href="${escHtml(t.url)}" target="_blank" rel="noopener">${escHtml(t.name)}</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="badges">${badges}</div>
+          ${deleteBtn}
+        </div>
+      </div>
+      <div class="card-meta">
+        <span>📅 ${startDate}</span>
+        ${location ? `<span>${location}</span>` : ''}
+        ${attendees ? `<span>${attendees}</span>` : ''}
+      </div>
+      ${eventsHTML}
+    </div>`;
+  }
+
+  // ==============================
+  // 手動追加
+  // ==============================
+  function openModal() {
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('formError').style.display = 'none';
+    // デフォルト日時を今日に
+    const now = new Date();
+    now.setMinutes(0);
+    document.getElementById('f-startAt').value = toLocalDatetime(now);
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    clearForm();
+  }
+  function clearForm() {
+    ['f-name','f-url','f-startAt','f-endAt','f-city'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+
+  async function submitManual() {
+    const name = document.getElementById('f-name').value.trim();
+    const url = document.getElementById('f-url').value.trim();
+    const startAt = document.getElementById('f-startAt').value;
+    const endAt = document.getElementById('f-endAt').value;
+    const isOnline = document.getElementById('f-isOnline').value === 'true';
+    const city = document.getElementById('f-city').value.trim();
+    const errEl = document.getElementById('formError');
+
+    if (!name || !url || !startAt) {
+      errEl.textContent = '大会名・URL・開始日時は必須です';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '追加中...';
+
+    try {
+      const res = await fetch(`${WORKER_URL}/api/tournaments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url, startAt, endAt: endAt || undefined, isOnline, city: city || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'エラー');
+
+      allTournaments.push(data.tournament);
+      applyFilters();
+      closeModal();
+    } catch (e) {
+      errEl.textContent = `追加に失敗しました: ${e.message}`;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '追加する';
+    }
+  }
+
+  async function deleteTournament(id) {
+    if (!confirm('この大会を削除しますか？')) return;
+    try {
+      const res = await fetch(`${WORKER_URL}/api/tournaments/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error);
+      allTournaments = allTournaments.filter(t => t.id !== id);
+      applyFilters();
+    } catch (e) {
+      alert(`削除失敗: ${e.message}`);
+    }
+  }
+
+  // ==============================
+  // ユーティリティ
+  // ==============================
+  function formatDate(ts) {
+    if (!ts) return '日時未定';
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function toLocalDatetime(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function updateLastUpdated(iso) {
+    const el = document.getElementById('lastUpdated');
+    if (!iso) { el.textContent = '未取得'; return; }
+    const d = new Date(iso);
+    el.textContent = `最終更新: ${d.toLocaleString('ja-JP')}`;
+  }
+
+  function showLoading() {
+    document.getElementById('content').innerHTML = `<div class="loading"><div class="spinner"></div><div>取得中...</div></div>`;
+  }
+
+  function showError(msg) {
+    document.getElementById('content').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>${msg}</div></div>`;
+  }
+
+  // モーダル外クリックで閉じる
+  document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+name = "fortnite-tracker-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+# Cron: 6時間ごとに Start.gg から自動取得
+[triggers]
+crons = ["0 */6 * * *"]
+
+# KV Namespace（作成後に id を記入する）
+[[kv_namespaces]]
+binding = "TOURNAMENTS_KV"
+id = "056257b96a94409792df21712d30fcf6"
+preview_id = "c015db4de1fa446eb910516bf364c3c4"
+
+# 環境変数（シークレットは wrangler secret put で設定する）
+[vars]
+STARTGG_GAME_ID = "1095"
+# STARTGG_API_TOKEN は `wrangler secret put STARTGG_API_TOKEN` で設定
+
+[dev]
+port = 8787
