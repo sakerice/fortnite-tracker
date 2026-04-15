@@ -41,7 +41,7 @@ async function fetchPages(
   let totalPages = 1;
   const perPage = 50;
 
-  while (page <= totalPages && page <= 5) {
+  while (page <= totalPages && page <= 10) {
     // Start.gg は複雑なクエリでレート制限がかかることがあるため間隔を空ける
     if (page > 1) await new Promise(r => setTimeout(r, 1000));
 
