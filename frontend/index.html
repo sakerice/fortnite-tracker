@@ -398,40 +398,45 @@
     .cal-dow:first-child { color: #f87171; }
     .cal-dow:last-child  { color: #60a5fa; }
     .cal-day {
-      min-height: 72px;
+      height: 80px;
+      overflow: hidden;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 6px;
+      padding: 5px;
       transition: border-color 0.15s;
       cursor: default;
+      display: flex;
+      flex-direction: column;
     }
     .cal-day.other-month { opacity: 0.3; }
     .cal-day.today { border-color: var(--accent); }
     .cal-day.has-events { cursor: pointer; }
     .cal-day.has-events:hover { border-color: var(--accent2); }
     .cal-day-num {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--muted);
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
+      flex-shrink: 0;
     }
-    .cal-day.today .cal-day-num {
-      color: var(--accent);
-    }
+    .cal-day.today .cal-day-num { color: var(--accent); }
+    .cal-dots { overflow: hidden; flex: 1; min-height: 0; }
     .cal-dot {
-      font-size: 0.65rem;
-      line-height: 1.4;
-      padding: 1px 4px;
+      font-size: 0.6rem;
+      line-height: 1.35;
+      padding: 1px 3px;
       border-radius: 3px;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: block;
+      min-width: 0;
     }
     .cal-dot.online  { background: rgba(52,211,153,0.15); color: var(--online); }
     .cal-dot.offline { background: rgba(248,113,113,0.15); color: var(--offline); }
-    .cal-dot.more    { color: var(--muted); font-size: 0.6rem; }
+    .cal-dot.more    { color: var(--muted); font-size: 0.58rem; }
 
     /* 日別ポップオーバー */
     .day-detail {
@@ -452,14 +457,13 @@
     @media (max-width: 600px) {
       .filter-bar { gap: 8px; }
       .form-row { flex-direction: column; gap: 0; }
-      .cal-day { min-height: 52px; padding: 4px; }
-      .cal-dot { display: none; }
-      .cal-day.has-events::after {
-        content: '●';
-        display: block;
+      .cal-day { height: 56px; padding: 4px; }
+      .cal-dots { display: none; }
+      .cal-day.has-events .cal-day-num::after {
+        content: ' ●';
         color: var(--accent2);
-        font-size: 0.5rem;
-        text-align: center;
+        font-size: 0.45rem;
+        vertical-align: middle;
       }
     }
   </style>
@@ -482,6 +486,10 @@
   <label class="filter-chip" id="chip-prize">
     <input type="checkbox" onchange="applyFilters()">
     🏆 賞金あり
+  </label>
+  <label class="filter-chip" id="chip-japan">
+    <input type="checkbox" onchange="applyFilters()">
+    🇯🇵 日本開催
   </label>
   <select class="filter-select" id="ageFilter" onchange="applyFilters()">
     <option value="">年齢制限なし</option>
@@ -615,14 +623,17 @@
     const ageEl = document.getElementById('ageFilter');
     const dateEl = document.getElementById('dateFilter');
 
+    const chipJapan  = document.getElementById('chip-japan');
     const wantOnline = chipOnline.querySelector('input').checked;
-    const wantPrize = chipPrize.querySelector('input').checked;
+    const wantPrize  = chipPrize.querySelector('input').checked;
+    const wantJapan  = chipJapan.querySelector('input').checked;
     const age = ageEl.value;
     const days = dateEl.value;
 
     // chip スタイル更新
     chipOnline.classList.toggle('active', wantOnline);
     chipPrize.classList.toggle('active', wantPrize);
+    chipJapan.classList.toggle('active', wantJapan);
 
     let result = allTournaments;
     const activeFilters = [];
@@ -634,6 +645,10 @@
     if (wantPrize) {
       result = result.filter(t => t.prizePools?.some(p => p.totalAmount > 0));
       activeFilters.push('賞金あり');
+    }
+    if (wantJapan) {
+      result = result.filter(t => !t.isOnline && t.countryCode === 'JP');
+      activeFilters.push('日本開催');
     }
     if (age) {
       const a = parseInt(age);
@@ -826,15 +841,15 @@
 
     const onclick = hasEvents ? `onclick="selectDay(${date.getFullYear()},${date.getMonth()},${date.getDate()})"` : '';
 
-    // ドット（大会名）最大2件 + more
-    const dots = ts.slice(0, 2).map(t =>
-      `<div class="cal-dot ${t.isOnline ? 'online' : 'offline'}" title="${escHtml(t.name)}">${escHtml(t.name)}</div>`
+    // ドット（大会名）最大3件 + more
+    const dots = ts.slice(0, 3).map(t =>
+      `<span class="cal-dot ${t.isOnline ? 'online' : 'offline'}" title="${escHtml(t.name)}">${escHtml(t.name)}</span>`
     ).join('');
-    const more = ts.length > 2 ? `<div class="cal-dot more">+${ts.length - 2} 件</div>` : '';
+    const more = ts.length > 3 ? `<span class="cal-dot more">+${ts.length - 3}</span>` : '';
 
     return `<div class="${classes}" ${onclick} style="${isSelected ? 'border-color:var(--accent2);background:rgba(124,58,237,0.08)' : ''}">
       <div class="cal-day-num">${date.getDate()}</div>
-      ${dots}${more}
+      <div class="cal-dots">${dots}${more}</div>
     </div>`;
   }
 
