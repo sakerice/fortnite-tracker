@@ -206,7 +206,19 @@
       font-size: 0.7rem;
     }
 
-    /* カード削除ボタン（手動追加分のみ） */
+    /* カード編集・削除ボタン（手動追加分のみ） */
+    .card-edit {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .card-edit:hover { color: var(--accent); }
     .card-delete {
       background: none;
       border: none;
@@ -455,6 +467,26 @@
     .day-detail .card-list { gap: 8px; }
     .day-detail .card { padding: 12px; }
 
+    /* サイト全体お知らせバー */
+    .site-notice {
+      background: rgba(251,191,36,0.1);
+      border-bottom: 1px solid rgba(251,191,36,0.3);
+      color: #fbbf24;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      padding: 10px 20px;
+    }
+
+    /* セクション見出し */
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
     /* コミュニティセクション */
     #community-section {
       max-width: 900px;
@@ -464,32 +496,20 @@
     .community-header {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
+      border-radius: 12px 12px 0 0;
+      padding: 12px 18px;
       font-size: 0.9rem;
       font-weight: 600;
       color: var(--text);
-      transition: border-color 0.2s;
-      user-select: none;
     }
-    .community-header:hover { border-color: var(--accent); }
-    #community-toggle-icon { color: var(--muted); transition: transform 0.2s; font-size: 0.75rem; }
-    #community-toggle-icon.open { transform: rotate(180deg); }
 
     #community-body {
-      display: none;
       border: 1px solid var(--border);
       border-top: none;
       border-radius: 0 0 12px 12px;
       padding: 20px;
       background: rgba(26,26,46,0.6);
     }
-    #community-body.open { display: block; }
-    .community-header.open { border-radius: 12px 12px 0 0; }
     .community-desc {
       font-size: 0.82rem;
       color: var(--muted);
@@ -570,6 +590,10 @@
   <button class="refresh-btn" onclick="refreshData()">↻ 更新</button>
 </header>
 
+<div class="site-notice">
+  ⚠️ 日本においては、各プラットフォーム・コミュニティにおけるFortnite専用の情報は少ない傾向。自動取得できた大会情報は最下部にリスト&amp;カレンダーで掲示、その他は情報掲示がされ得るコミュニティのリンクを掲載（見つけた情報を最下部のリストに登録可能）
+</div>
+
 <div class="filter-bar">
   <label class="filter-chip" id="chip-online">
     <input type="checkbox" onchange="applyFilters()">
@@ -597,19 +621,15 @@
   <button id="addBtn" onclick="openModal()">＋ 手動追加</button>
 </div>
 
-<!-- コミュニティリンクセクション（フィルターバーの直下） -->
+<!-- コミュニティリンクセクション -->
 <section id="community-section">
-  <div class="community-header" onclick="toggleCommunity()">
+  <div class="community-header">
     <span>🌐 大会情報コミュニティ・リンク集</span>
-    <span id="community-toggle-icon">▼</span>
   </div>
-  <div id="community-body">
+  <div id="community-body" class="open">
     <p class="community-desc">
       日本のFortnite大会情報は有志のコミュニティで共有されています。<br>
       気になる大会を見つけたら「手動追加」でこのサイトに登録できます。
-    </p>
-    <p class="community-notice">
-      ⚠️ 現状、各プラットフォーム・コミュニティにおけるFortnite専用の情報は少ない傾向があります。大会情報を見つけた際は積極的に手動追加にご協力ください。
     </p>
     <div class="community-grid">
 
@@ -670,6 +690,7 @@
 </section>
 
 <main>
+  <h2 class="section-title">📋 自動取得できた大会情報</h2>
   <div class="status-bar">
     <span><span class="count" id="countLabel">-</span> 件の大会</span>
     <span id="filterLabel"></span>
@@ -686,10 +707,10 @@
   </div>
 </main>
 
-<!-- 手動追加モーダル -->
+<!-- 手動追加・編集モーダル -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <h2>大会を手動追加</h2>
+    <h2 id="modal-title">大会を手動追加</h2>
     <div class="error-msg" id="formError" style="display:none"></div>
     <div class="form-group">
       <label>大会名 *</label>
@@ -725,6 +746,7 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
       <button class="btn-submit" id="submitBtn" onclick="submitManual()">追加する</button>
+      <input type="hidden" id="f-editId">
     </div>
   </div>
 </div>
@@ -903,7 +925,8 @@
         </div>` : '';
 
     const deleteBtn = isManual
-      ? `<button class="card-delete" onclick="deleteTournament('${escHtml(t.id)}')" title="削除">✕</button>`
+      ? `<button class="card-edit" onclick="editTournament('${escHtml(t.id)}')" title="編集">✎</button>
+         <button class="card-delete" onclick="deleteTournament('${escHtml(t.id)}')" title="削除">✕</button>`
       : '';
 
     return `<div class="card" id="card-${escHtml(t.id)}">
@@ -1055,8 +1078,11 @@
   // 手動追加
   // ==============================
   function openModal() {
-    document.getElementById('modal').classList.add('open');
+    document.getElementById('f-editId').value = '';
+    document.getElementById('modal-title').textContent = '大会を手動追加';
+    document.getElementById('submitBtn').textContent = '追加する';
     document.getElementById('formError').style.display = 'none';
+    document.getElementById('modal').classList.add('open');
     // 開始日が未入力のときのみ今日をデフォルトにセット
     const startEl = document.getElementById('f-startAt');
     if (!startEl.value) {
@@ -1070,14 +1096,17 @@
     document.getElementById('modal').classList.remove('open');
   }
   function clearForm() {
-    ['f-name','f-url','f-startAt','f-endAt','f-city'].forEach(id => {
+    ['f-name','f-url','f-startAt','f-endAt','f-city','f-editId'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('f-isOnline').value = 'true';
     document.getElementById('og-status').textContent = '';
+    document.getElementById('modal-title').textContent = '大会を手動追加';
+    document.getElementById('submitBtn').textContent = '追加する';
   }
 
   async function submitManual() {
+    const editId = document.getElementById('f-editId').value;
     const name = document.getElementById('f-name').value.trim();
     const url = document.getElementById('f-url').value.trim();
     const startAt = document.getElementById('f-startAt').value;
@@ -1087,35 +1116,73 @@
     const errEl = document.getElementById('formError');
 
     if (!name || !url || !startAt) {
-      errEl.textContent = '大会名・URL・開始日時は必須です';
+      errEl.textContent = '大会名・URL・開始日は必須です';
       errEl.style.display = 'block';
       return;
     }
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.textContent = '追加中...';
+    btn.textContent = editId ? '更新中...' : '追加中...';
 
     try {
-      const res = await fetch(`${WORKER_URL}/api/tournaments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url, startAt, endAt: endAt || undefined, isOnline, city: city || undefined }),
-      });
+      const body = { name, url, startAt, endAt: endAt || undefined, isOnline, city: city || undefined };
+      const res = editId
+        ? await fetch(`${WORKER_URL}/api/tournaments/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+        : await fetch(`${WORKER_URL}/api/tournaments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'エラー');
 
-      allTournaments.push(data.tournament);
+      if (editId) {
+        const idx = allTournaments.findIndex(t => t.id === editId);
+        if (idx !== -1) allTournaments[idx] = data.tournament;
+      } else {
+        allTournaments.push(data.tournament);
+      }
       applyFilters();
-      clearForm();   // 送信成功時のみクリア
+      clearForm();
       closeModal();
     } catch (e) {
-      errEl.textContent = `追加に失敗しました: ${e.message}`;
+      errEl.textContent = `${editId ? '更新' : '追加'}に失敗しました: ${e.message}`;
       errEl.style.display = 'block';
     } finally {
       btn.disabled = false;
-      btn.textContent = '追加する';
+      btn.textContent = editId ? '更新する' : '追加する';
     }
+  }
+
+  function editTournament(id) {
+    const t = allTournaments.find(t => t.id === id);
+    if (!t) return;
+
+    const pad = n => String(n).padStart(2, '0');
+    const toDate = ts => {
+      if (!ts) return '';
+      const d = new Date(ts * 1000);
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    };
+
+    document.getElementById('f-editId').value = id;
+    document.getElementById('f-name').value = t.name;
+    document.getElementById('f-url').value = t.url;
+    document.getElementById('f-startAt').value = toDate(t.startAt);
+    document.getElementById('f-endAt').value = toDate(t.endAt);
+    document.getElementById('f-isOnline').value = t.isOnline ? 'true' : 'false';
+    document.getElementById('f-city').value = t.city ?? '';
+    document.getElementById('og-status').textContent = '';
+    document.getElementById('formError').style.display = 'none';
+
+    document.getElementById('modal-title').textContent = '大会を編集';
+    document.getElementById('submitBtn').textContent = '更新する';
+    document.getElementById('modal').classList.add('open');
   }
 
   async function deleteTournament(id) {
@@ -1199,17 +1266,6 @@
     if (e.target === e.currentTarget) closeModal();
   });
 
-  // ==============================
-  // コミュニティリンク開閉
-  // ==============================
-  function toggleCommunity() {
-    const body = document.getElementById('community-body');
-    const icon = document.getElementById('community-toggle-icon');
-    const header = document.querySelector('.community-header');
-    const isOpen = body.classList.toggle('open');
-    icon.classList.toggle('open', isOpen);
-    header.classList.toggle('open', isOpen);
-  }
 </script>
 </body>
 </html>

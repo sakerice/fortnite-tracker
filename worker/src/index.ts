@@ -42,6 +42,10 @@ export default {
       case url.pathname === '/api/tournaments' && request.method === 'POST':
         return handleAddTournament(request, env);
 
+      // 手動大会更新
+      case /^\/api\/tournaments\/manual_\w+$/.test(url.pathname) && request.method === 'PUT':
+        return handleUpdateTournament(url.pathname, request, env);
+
       // 手動大会削除
       case /^\/api\/tournaments\/manual_\w+$/.test(url.pathname) && request.method === 'DELETE':
         return handleDeleteTournament(url.pathname, env);
@@ -193,6 +197,40 @@ async function handleAddTournament(request: Request, env: Env): Promise<Response
   await env.TOURNAMENTS_KV.put(KV_TOURNAMENTS, JSON.stringify(existing));
 
   return json({ success: true, tournament }, 201);
+}
+
+// ============================
+// PUT /api/tournaments/:id（手動追加分のみ更新可）
+// ============================
+async function handleUpdateTournament(pathname: string, request: Request, env: Env): Promise<Response> {
+  const id = pathname.split('/').pop()!;
+  const existing = await loadTournaments(env);
+  const idx = existing.findIndex(t => t.id === id);
+
+  if (idx === -1) return json({ error: '大会が見つかりません' }, 404);
+  if (existing[idx].source !== 'manual') return json({ error: '手動追加した大会のみ編集できます' }, 403);
+
+  let body: any;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  if (!body.name || !body.url || !body.startAt) {
+    return json({ error: 'name, url, startAt は必須です' }, 400);
+  }
+  const startTs = Math.floor(new Date(body.startAt).getTime() / 1000);
+  if (isNaN(startTs)) return json({ error: 'startAt の日付形式が不正です' }, 400);
+
+  existing[idx] = {
+    ...existing[idx],
+    name: String(body.name).slice(0, 200),
+    url: String(body.url).slice(0, 500),
+    startAt: startTs,
+    endAt: body.endAt ? Math.floor(new Date(body.endAt).getTime() / 1000) : 0,
+    isOnline: Boolean(body.isOnline),
+    city: body.city ? String(body.city).slice(0, 100) : undefined,
+  };
+
+  await env.TOURNAMENTS_KV.put(KV_TOURNAMENTS, JSON.stringify(existing));
+  return json({ success: true, tournament: existing[idx] });
 }
 
 // ============================
