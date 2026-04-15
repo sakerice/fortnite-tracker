@@ -10,7 +10,7 @@ export interface Tournament {
   numAttendees: number;
   events: TournamentEvent[];
   prizePools: PrizePool[];
-  source: 'startgg' | 'manual';
+  source: 'startgg' | 'manual' | 'faceit';
   addedAt: number;       // Unix ms
 }
 
@@ -31,5 +31,6 @@ export interface PrizePool {
 export interface Env {
   TOURNAMENTS_KV: KVNamespace;
   STARTGG_API_TOKEN: string;
-  STARTGG_GAME_ID?: string;   // Fortnite = 1842
+  STARTGG_GAME_ID?: string;   // Fortnite = 1095
+  FACEIT_API_KEY?: string;    // optional: https://developers.faceit.com
 }

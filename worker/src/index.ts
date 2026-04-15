@@ -1,4 +1,5 @@
 import { fetchFortniteTournaments } from './startgg';
+import { fetchFaceitTournaments } from './faceit';
 import type { Env, Tournament } from './types';
 
 // KVキー
@@ -50,6 +51,10 @@ export default {
         ctx.waitUntil(syncFromStartGG(env));
         return json({ message: 'Refresh started' });
 
+      // OGPメタ情報取得（手動追加フォームのURL自動補完用）
+      case url.pathname === '/api/fetch-og' && request.method === 'GET':
+        return handleFetchOg(url);
+
       default:
         return new Response('Not Found', { status: 404 });
     }
@@ -60,19 +65,36 @@ export default {
 // Start.gg → KV 同期
 // ============================
 async function syncFromStartGG(env: Env) {
-  const gameId = env.STARTGG_GAME_ID ?? '1842';
-  const freshTournaments = await fetchFortniteTournaments(env.STARTGG_API_TOKEN, gameId);
+  const gameId = env.STARTGG_GAME_ID ?? '1095';
+
+  // 各ソースを独立して取得（1つ失敗しても他に影響しない）
+  const [startggResult, faceitResult] = await Promise.allSettled([
+    fetchFortniteTournaments(env.STARTGG_API_TOKEN, gameId),
+    env.FACEIT_API_KEY
+      ? fetchFaceitTournaments(env.FACEIT_API_KEY)
+      : Promise.resolve([] as Tournament[]),
+  ]);
+
+  const startgg = startggResult.status === 'fulfilled' ? startggResult.value : [];
+  const faceit  = faceitResult.status  === 'fulfilled' ? faceitResult.value  : [];
+
+  if (startggResult.status === 'rejected') console.error('[Sync] Start.gg failed:', startggResult.reason);
+  if (faceitResult.status  === 'rejected') console.error('[Sync] FACEIT failed:',   faceitResult.reason);
+
+  // 自動収集分を ID でマージ（重複除去）
+  const autoById = new Map<string, Tournament>();
+  for (const t of [...startgg, ...faceit]) autoById.set(t.id, t);
 
   // 手動追加分は維持する
   const existing = await loadTournaments(env);
   const manuals = existing.filter(t => t.source === 'manual');
 
-  const merged = [...freshTournaments, ...manuals];
+  const merged = [...autoById.values(), ...manuals];
   await env.TOURNAMENTS_KV.put(KV_TOURNAMENTS, JSON.stringify(merged));
   await env.TOURNAMENTS_KV.put(KV_LAST_UPDATED, new Date().toISOString());
 
   console.log(
-    `[Sync] Done: ${freshTournaments.length} from Start.gg + ${manuals.length} manual = ${merged.length} total`
+    `[Sync] Done: startgg=${startgg.length} faceit=${faceit.length} manual=${manuals.length} total=${merged.length}`
   );
 }
 
@@ -182,6 +204,85 @@ async function handleDeleteTournament(pathname: string, env: Env): Promise<Respo
   const updated = existing.filter(t => t.id !== id);
   await env.TOURNAMENTS_KV.put(KV_TOURNAMENTS, JSON.stringify(updated));
   return json({ success: true });
+}
+
+// ============================
+// GET /api/fetch-og?url=<encoded>
+// 指定URLのOGP/metaタグを取得して大会情報を推定する
+// ============================
+async function handleFetchOg(reqUrl: URL): Promise<Response> {
+  const targetUrl = reqUrl.searchParams.get('url');
+  if (!targetUrl) return json({ error: 'url parameter required' }, 400);
+
+  let parsed: URL;
+  try {
+    parsed = new URL(targetUrl);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+  } catch {
+    return json({ error: 'Invalid URL' }, 400);
+  }
+
+  try {
+    const res = await fetch(parsed.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FortniteTrackerBot/1.0)',
+        Accept: 'text/html',
+      },
+      redirect: 'follow',
+      // @ts-ignore - Cloudflare Workers 独自オプション
+      cf: { cacheTtl: 300 },
+    });
+
+    if (!res.ok) return json({ error: `Fetch failed: ${res.status}` }, 502);
+
+    const html = await res.text();
+
+    const getMeta = (prop: string): string => {
+      const m =
+        html.match(new RegExp(`<meta[^>]+property=["']og:${prop}["'][^>]+content=["']([^"']+)["']`, 'i')) ||
+        html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:${prop}["']`, 'i')) ||
+        html.match(new RegExp(`<meta[^>]+name=["']${prop}["'][^>]+content=["']([^"']+)["']`, 'i'));
+      return m ? decodeHtmlEntities(m[1].trim()) : '';
+    };
+
+    const getTitle = (): string => {
+      return (
+        getMeta('title') ||
+        (html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? '')
+      );
+    };
+
+    // 日時の推定（og:description や本文から yyyy-mm-dd / yyyy/mm/dd パターンを探す）
+    const guessDate = (): string => {
+      const text = html.replace(/<[^>]+>/g, ' ');
+      const m = text.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+      if (m) {
+        const [, y, mo, d] = m;
+        return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}T00:00`;
+      }
+      return '';
+    };
+
+    return json({
+      title: getTitle(),
+      description: getMeta('description'),
+      image: getMeta('image'),
+      siteName: getMeta('site_name'),
+      guessedDate: guessDate(),
+    });
+  } catch (e) {
+    return json({ error: `Fetch error: ${String(e)}` }, 502);
+  }
+}
+
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
 }
 
 // ============================

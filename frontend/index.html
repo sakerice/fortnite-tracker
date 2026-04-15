@@ -170,7 +170,8 @@
     .badge-online { background: rgba(52, 211, 153, 0.15); color: var(--online); }
     .badge-offline { background: rgba(248, 113, 113, 0.15); color: var(--offline); }
     .badge-prize { background: rgba(251, 191, 36, 0.15); color: var(--prize); }
-    .badge-manual { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
+    .badge-manual  { background: rgba(124, 58, 237, 0.15); color: #a78bfa; }
+    .badge-faceit  { background: rgba(255, 85, 0, 0.15);  color: #ff8c42; }
 
     .card-meta {
       display: flex;
@@ -536,8 +537,8 @@
       <input type="text" id="f-name" placeholder="例: Fortnite Champions Cup">
     </div>
     <div class="form-group">
-      <label>URL *</label>
-      <input type="url" id="f-url" placeholder="https://...">
+      <label>URL * <span id="og-status" style="font-size:0.7rem;color:var(--muted);margin-left:6px;"></span></label>
+      <input type="url" id="f-url" placeholder="https://..." onblur="fetchOgInfo(this.value)">
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -707,12 +708,14 @@
     const hasPrize = t.prizePools?.some(p => p.totalAmount > 0);
     const totalPrize = t.prizePools?.reduce((s, p) => s + p.totalAmount, 0) ?? 0;
     const currency = t.prizePools?.[0]?.currency ?? 'USD';
-    const isManual = t.source === 'manual';
+    const isManual  = t.source === 'manual';
+    const isFaceit  = t.source === 'faceit';
 
     const badges = [
       `<span class="badge ${t.isOnline ? 'badge-online' : 'badge-offline'}">${t.isOnline ? '🌐 オンライン' : '📍 オフライン'}</span>`,
-      hasPrize ? `<span class="badge badge-prize">🏆 $${totalPrize.toLocaleString()} ${currency}</span>` : '',
-      isManual ? `<span class="badge badge-manual">✏️ 手動</span>` : '',
+      hasPrize  ? `<span class="badge badge-prize">🏆 $${totalPrize.toLocaleString()} ${currency}</span>` : '',
+      isFaceit  ? `<span class="badge badge-faceit">FACEIT</span>` : '',
+      isManual  ? `<span class="badge badge-manual">✏️ 手動</span>` : '',
     ].filter(Boolean).join('');
 
     const location = !t.isOnline && t.city ? `📍 ${t.city}${t.countryCode ? ', ' + t.countryCode : ''}` : '';
@@ -981,6 +984,37 @@
 
   function showError(msg) {
     document.getElementById('content').innerHTML = `<div class="empty"><div class="icon">⚠️</div><div>${msg}</div></div>`;
+  }
+
+  // ==============================
+  // OGP 自動補完
+  // ==============================
+  async function fetchOgInfo(url) {
+    if (!url || !url.startsWith('http')) return;
+    const nameEl   = document.getElementById('f-name');
+    const startEl  = document.getElementById('f-startAt');
+    const statusEl = document.getElementById('og-status');
+
+    statusEl.textContent = '取得中...';
+    try {
+      const res = await fetch(`${WORKER_URL}/api/fetch-og?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // 名前が空の場合のみ自動補完
+      if (!nameEl.value && data.title) {
+        nameEl.value = data.title;
+      }
+      // 日付が空の場合のみ自動補完
+      if (!startEl.value && data.guessedDate) {
+        startEl.value = data.guessedDate;
+      }
+      statusEl.textContent = data.title ? '✓ 情報を取得しました' : '情報なし';
+      statusEl.style.color = 'var(--online)';
+    } catch (e) {
+      statusEl.textContent = '取得失敗';
+      statusEl.style.color = 'var(--offline)';
+    }
   }
 
   // モーダル外クリックで閉じる

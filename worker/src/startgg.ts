@@ -2,9 +2,9 @@ import type { Tournament, PrizePool } from './types';
 
 const API_URL = 'https://api.start.gg/gql/alpha';
 
-// Start.gg GraphQL: 今後のFortnite大会を取得
 // gameId は整数として渡すため変数に含めず文字列補間で埋め込む
-function buildQuery(gameId: string) {
+function buildQuery(gameId: string, countryCode?: string) {
+  const countryFilter = countryCode ? `countryCode: "${countryCode}"` : '';
   return `
 query FortniteTournaments($page: Int!, $perPage: Int!, $afterDate: Timestamp!) {
   tournaments(query: {
@@ -13,28 +13,15 @@ query FortniteTournaments($page: Int!, $perPage: Int!, $afterDate: Timestamp!) {
     filter: {
       videogameIds: [${gameId}]
       afterDate: $afterDate
+      ${countryFilter}
     }
   }) {
-    pageInfo {
-      total
-      totalPages
-    }
+    pageInfo { total totalPages }
     nodes {
-      id
-      name
-      slug
-      startAt
-      endAt
-      isOnline
-      city
-      countryCode
-      numAttendees
+      id name slug startAt endAt isOnline
+      city countryCode numAttendees
       events {
-        id
-        name
-        startAt
-        numEntrants
-        type
+        id name startAt numEntrants type
       }
     }
   }
@@ -42,43 +29,46 @@ query FortniteTournaments($page: Int!, $perPage: Int!, $afterDate: Timestamp!) {
 `;
 }
 
-export async function fetchFortniteTournaments(
+// 1クエリ分のページネーション取得
+async function fetchPages(
   apiToken: string,
-  gameId = '1842'
+  query: string,
+  afterDate: number,
+  label: string
 ): Promise<Tournament[]> {
-  const afterDate = Math.floor(Date.now() / 1000); // 現在時刻（Unix秒）
   const all: Tournament[] = [];
   let page = 1;
   let totalPages = 1;
   const perPage = 50;
 
-  const query = buildQuery(gameId);
-
   while (page <= totalPages && page <= 5) {
+    // Start.gg は複雑なクエリでレート制限がかかることがあるため間隔を空ける
+    if (page > 1) await new Promise(r => setTimeout(r, 1000));
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiToken}`,
       },
-      body: JSON.stringify({
-        query,
-        variables: { page, perPage, afterDate },
-      }),
+      body: JSON.stringify({ query, variables: { page, perPage, afterDate } }),
     });
 
     if (!res.ok) {
-      throw new Error(`Start.gg API HTTP error: ${res.status} ${res.statusText}`);
+      console.error(`[Start.gg ${label}] HTTP ${res.status} on page ${page}`);
+      break;
     }
 
     const json = (await res.json()) as any;
 
     if (json.errors?.length) {
-      throw new Error(`Start.gg GraphQL error: ${JSON.stringify(json.errors)}`);
+      console.error(`[Start.gg ${label}] GraphQL error: ${JSON.stringify(json.errors)}`);
+      break;
     }
 
     const result = json.data.tournaments;
     totalPages = result.pageInfo.totalPages;
+    console.log(`[Start.gg ${label}] page ${page}/${totalPages}, ${result.nodes.length} nodes`);
 
     for (const node of result.nodes) {
       const events = (node.events ?? []).map((e: any) => ({
@@ -89,7 +79,6 @@ export async function fetchFortniteTournaments(
         type: e.type ?? undefined,
       }));
 
-      // Start.gg APIでは賞金情報はトーナメント名に含まれることが多い
       const prizePools: PrizePool[] = [];
 
       all.push({
@@ -113,4 +102,33 @@ export async function fetchFortniteTournaments(
   }
 
   return all;
+}
+
+export async function fetchFortniteTournaments(
+  apiToken: string,
+  gameId = '1095'
+): Promise<Tournament[]> {
+  // 昨日からに広げる（今日開始の大会を取りこぼさないため）
+  const afterDate = Math.floor((Date.now() - 86_400_000) / 1000);
+
+  // クエリ1: グローバル全件
+  const globalQuery = buildQuery(gameId);
+  const globalResults = await fetchPages(apiToken, globalQuery, afterDate, 'global');
+
+  // クエリ2: 日本絞り込み（グローバルで拾えていないものを補完）
+  const japanQuery = buildQuery(gameId, 'JP');
+  const japanResults = await fetchPages(apiToken, japanQuery, afterDate, 'JP');
+
+  // 重複除去（IDベース）
+  const seen = new Set(globalResults.map(t => t.id));
+  const unique = [
+    ...globalResults,
+    ...japanResults.filter(t => !seen.has(t.id)),
+  ];
+
+  console.log(
+    `[Start.gg] global=${globalResults.length} JP-only=${japanResults.filter(t => !seen.has(t.id)).length} total=${unique.length}`
+  );
+
+  return unique;
 }
