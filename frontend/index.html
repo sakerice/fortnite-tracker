@@ -701,12 +701,12 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>開始日時 *</label>
-        <input type="datetime-local" id="f-startAt">
+        <label>開始日 *</label>
+        <input type="date" id="f-startAt">
       </div>
       <div class="form-group">
-        <label>終了日時</label>
-        <input type="datetime-local" id="f-endAt">
+        <label>終了日</label>
+        <input type="date" id="f-endAt">
       </div>
     </div>
     <div class="form-row">
@@ -796,8 +796,13 @@
     chipJapan.classList.toggle('active', wantJapan);
 
     const nowTs = Math.floor(Date.now() / 1000);
-    // 過去の大会は常に除外（startAt=0 は日時未定として表示する）
-    let result = allTournaments.filter(t => t.startAt === 0 || t.startAt >= nowTs);
+    // 終了日が未来、または開始日が未来、または日時未定のみ表示
+    // （開始済みでも終了日が未来なら進行中として表示）
+    let result = allTournaments.filter(t =>
+      t.startAt === 0 ||
+      t.startAt >= nowTs ||
+      (t.endAt > 0 && t.endAt >= nowTs)
+    );
     const activeFilters = [];
 
     if (wantOnline) {
@@ -1052,19 +1057,24 @@
   function openModal() {
     document.getElementById('modal').classList.add('open');
     document.getElementById('formError').style.display = 'none';
-    // デフォルト日時を今日に
-    const now = new Date();
-    now.setMinutes(0);
-    document.getElementById('f-startAt').value = toLocalDatetime(now);
+    // 開始日が未入力のときのみ今日をデフォルトにセット
+    const startEl = document.getElementById('f-startAt');
+    if (!startEl.value) {
+      const today = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      startEl.value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+    }
   }
   function closeModal() {
+    // 入力途中の内容は保持したまま閉じる
     document.getElementById('modal').classList.remove('open');
-    clearForm();
   }
   function clearForm() {
     ['f-name','f-url','f-startAt','f-endAt','f-city'].forEach(id => {
       document.getElementById(id).value = '';
     });
+    document.getElementById('f-isOnline').value = 'true';
+    document.getElementById('og-status').textContent = '';
   }
 
   async function submitManual() {
@@ -1097,6 +1107,7 @@
 
       allTournaments.push(data.tournament);
       applyFilters();
+      clearForm();   // 送信成功時のみクリア
       closeModal();
     } catch (e) {
       errEl.textContent = `追加に失敗しました: ${e.message}`;
