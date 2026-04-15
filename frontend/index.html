@@ -539,6 +539,13 @@
       margin-bottom: 16px;
       line-height: 1.6;
     }
+    /* コミュニティ全体レイアウト（縦積み） */
+    .community-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
     /* 公式大会（上段フル幅） */
     .community-row-official {
       margin-bottom: 16px;
@@ -645,7 +652,7 @@
       日本のFortnite大会情報は有志のコミュニティで共有されています。<br>
       気になる大会を見つけたら以下カレンダーに<button class="inline-link" onclick="openModal()">手動追加</button>でも登録できます。
     </p>
-    <div class="community-grid">
+    <div class="community-layout">
 
       <!-- 上段: 公式大会（フル幅） -->
       <div class="community-row-official">
@@ -709,9 +716,10 @@
           </a>
         </div>
 
-      </div>
+      </div><!-- /.community-grid -->
 
-  </div>
+    </div><!-- /.community-layout -->
+  </div><!-- /#community-body -->
 </section>
 
 <main>
