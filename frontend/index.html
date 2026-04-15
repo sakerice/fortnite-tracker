@@ -458,7 +458,7 @@
     /* コミュニティセクション */
     #community-section {
       max-width: 900px;
-      margin: 0 auto 32px;
+      margin: 16px auto 0;
       padding: 0 20px;
     }
     .community-header {
@@ -591,24 +591,7 @@
   <button id="addBtn" onclick="openModal()">＋ 手動追加</button>
 </div>
 
-<main>
-  <div class="status-bar">
-    <span><span class="count" id="countLabel">-</span> 件の大会</span>
-    <span id="filterLabel"></span>
-    <div class="view-toggle">
-      <button class="view-btn active" id="btn-list" onclick="setView('list')">☰ リスト</button>
-      <button class="view-btn" id="btn-calendar" onclick="setView('calendar')">📅 カレンダー</button>
-    </div>
-  </div>
-  <div id="content">
-    <div class="loading">
-      <div class="spinner"></div>
-      <div>大会情報を取得中...</div>
-    </div>
-  </div>
-</main>
-
-<!-- コミュニティリンクセクション -->
+<!-- コミュニティリンクセクション（フィルターバーの直下） -->
 <section id="community-section">
   <div class="community-header" onclick="toggleCommunity()">
     <span>🌐 大会情報コミュニティ・リンク集</span>
@@ -676,6 +659,23 @@
     </div>
   </div>
 </section>
+
+<main>
+  <div class="status-bar">
+    <span><span class="count" id="countLabel">-</span> 件の大会</span>
+    <span id="filterLabel"></span>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-list" onclick="setView('list')">☰ リスト</button>
+      <button class="view-btn" id="btn-calendar" onclick="setView('calendar')">📅 カレンダー</button>
+    </div>
+  </div>
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>大会情報を取得中...</div>
+    </div>
+  </div>
+</main>
 
 <!-- 手動追加モーダル -->
 <div class="modal-overlay" id="modal">
@@ -786,7 +786,9 @@
     chipPrize.classList.toggle('active', wantPrize);
     chipJapan.classList.toggle('active', wantJapan);
 
-    let result = allTournaments;
+    const nowTs = Math.floor(Date.now() / 1000);
+    // 過去の大会は常に除外（startAt=0 は日時未定として表示する）
+    let result = allTournaments.filter(t => t.startAt === 0 || t.startAt >= nowTs);
     const activeFilters = [];
 
     if (wantOnline) {
