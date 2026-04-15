@@ -539,6 +539,33 @@
       margin-bottom: 16px;
       line-height: 1.6;
     }
+    /* 公式大会（上段フル幅） */
+    .community-row-official {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .community-official-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .community-link-official {
+      flex: 1;
+      min-width: 200px;
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .community-link-official:hover {
+      background: rgba(0,212,255,0.12);
+      border-color: var(--accent);
+    }
+    .community-link-official .cl-name {
+      font-size: 0.88rem;
+    }
+
     .community-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -620,59 +647,70 @@
     </p>
     <div class="community-grid">
 
-      <div class="community-col">
-        <div class="community-col-title">🏆 大会プラットフォーム</div>
-        <a class="community-link" href="https://www.j-cg.com/game/fortnite" target="_blank" rel="noopener">
-          <span class="cl-name">JCG（Japan Cyber Games）</span>
-          <span class="cl-desc">日本最大級のeスポーツ大会プラットフォーム。Fortniteの国内大会を定期開催</span>
-        </a>
-        <a class="community-link" href="https://tonamel.com" target="_blank" rel="noopener">
-          <span class="cl-name">Tonamel</span>
-          <span class="cl-desc">個人・コミュニティ主催の日本語大会プラットフォーム。草の根大会が多数</span>
-        </a>
-        <a class="community-link" href="https://www.start.gg/games/fortnite/events" target="_blank" rel="noopener">
-          <span class="cl-name">Start.gg</span>
-          <span class="cl-desc">このサイトが自動収集しているグローバル大会プラットフォーム</span>
-        </a>
-        <a class="community-link" href="https://www.faceit.com/ja/games/fortnite" target="_blank" rel="noopener">
-          <span class="cl-name">FACEIT</span>
-          <span class="cl-desc">このサイトが自動収集しているオンライン競技プラットフォーム</span>
-        </a>
+      <!-- 上段: 公式大会（フル幅） -->
+      <div class="community-row-official">
+        <div class="community-col-title">🏅 公式大会</div>
+        <div class="community-official-links">
+          <a class="community-link community-link-official" href="https://www.fortnite.com/competitive/schedule?region=ASIA" target="_blank" rel="noopener">
+            <span class="cl-name">⭐ 公式競技スケジュール（ASIA）</span>
+            <span class="cl-desc">Epic Games公式のアジアリージョン競技スケジュール一覧。FNCS等の主要大会はこちらを確認</span>
+          </a>
+        </div>
       </div>
 
-      <div class="community-col">
-        <div class="community-col-title">🐦 X（Twitter）</div>
-        <a class="community-link" href="https://x.com/fortnitejp" target="_blank" rel="noopener">
-          <span class="cl-name">@FortniteJP</span>
-          <span class="cl-desc">フォートナイト日本公式アカウント。大会・イベント情報を随時発信</span>
-        </a>
-        <a class="community-link" href="https://x.com/FNCompetitive" target="_blank" rel="noopener">
-          <span class="cl-name">@FNCompetitive</span>
-          <span class="cl-desc">フォートナイト競技公式。FNCS等の公式大会情報</span>
-        </a>
-        <a class="community-link" href="https://twitter.com/fortnitejpnews" target="_blank" rel="noopener">
-          <span class="cl-name">@fortnitejpnews</span>
-          <span class="cl-desc">日本語のFortniteニュース・大会情報</span>
-        </a>
+      <!-- 下段: 3カラム -->
+      <div class="community-grid">
+
+        <div class="community-col">
+          <div class="community-col-title">🏆 大会プラットフォーム</div>
+          <a class="community-link" href="https://www.j-cg.com/game/fortnite" target="_blank" rel="noopener">
+            <span class="cl-name">JCG（Japan Cyber Games）</span>
+            <span class="cl-desc">日本最大級のeスポーツ大会プラットフォーム。Fortniteの国内大会を定期開催</span>
+          </a>
+          <a class="community-link" href="https://tonamel.com" target="_blank" rel="noopener">
+            <span class="cl-name">Tonamel</span>
+            <span class="cl-desc">個人・コミュニティ主催の日本語大会プラットフォーム。草の根大会が多数</span>
+          </a>
+          <a class="community-link" href="https://www.start.gg/games/fortnite/events" target="_blank" rel="noopener">
+            <span class="cl-name">Start.gg</span>
+            <span class="cl-desc">このサイトが自動収集しているグローバル大会プラットフォーム</span>
+          </a>
+          <a class="community-link" href="https://www.faceit.com/ja/games/fortnite" target="_blank" rel="noopener">
+            <span class="cl-name">FACEIT</span>
+            <span class="cl-desc">このサイトが自動収集しているオンライン競技プラットフォーム</span>
+          </a>
+        </div>
+
+        <div class="community-col">
+          <div class="community-col-title">🐦 X（Twitter）</div>
+          <a class="community-link" href="https://x.com/fortnitejp" target="_blank" rel="noopener">
+            <span class="cl-name">@FortniteJP</span>
+            <span class="cl-desc">フォートナイト日本公式アカウント。大会・イベント情報を随時発信</span>
+          </a>
+          <a class="community-link" href="https://x.com/FNCompetitive" target="_blank" rel="noopener">
+            <span class="cl-name">@FNCompetitive</span>
+            <span class="cl-desc">フォートナイト競技公式。FNCS等の公式大会情報</span>
+          </a>
+          <a class="community-link" href="https://twitter.com/fortnitejpnews" target="_blank" rel="noopener">
+            <span class="cl-name">@fortnitejpnews</span>
+            <span class="cl-desc">日本語のFortniteニュース・大会情報</span>
+          </a>
+        </div>
+
+        <div class="community-col">
+          <div class="community-col-title">💬 Discord</div>
+          <a class="community-link" href="https://discord.com/invite/fortnite" target="_blank" rel="noopener">
+            <span class="cl-name">Fortnite 公式Discord</span>
+            <span class="cl-desc">160万人以上が参加。競技・LFG・最新情報チャンネルあり</span>
+          </a>
+          <a class="community-link" href="https://discord.com/invite/fortnitejp" target="_blank" rel="noopener">
+            <span class="cl-name">Fortnite JP Discord</span>
+            <span class="cl-desc">日本語メインのフォートナイトコミュニティ</span>
+          </a>
+        </div>
+
       </div>
 
-      <div class="community-col">
-        <div class="community-col-title">💬 Discord</div>
-        <a class="community-link" href="https://discord.com/invite/fortnite" target="_blank" rel="noopener">
-          <span class="cl-name">Fortnite 公式Discord</span>
-          <span class="cl-desc">160万人以上が参加。競技・LFG・最新情報チャンネルあり</span>
-        </a>
-        <a class="community-link" href="https://discord.com/invite/fortnitejp" target="_blank" rel="noopener">
-          <span class="cl-name">Fortnite JP Discord</span>
-          <span class="cl-desc">日本語メインのフォートナイトコミュニティ</span>
-        </a>
-        <a class="community-link" href="https://www.fortnite.com/competitive/schedule?region=ASIA" target="_blank" rel="noopener">
-          <span class="cl-name">公式競技スケジュール（ASIA）</span>
-          <span class="cl-desc">Epic公式のアジアリージョン競技スケジュール一覧</span>
-        </a>
-      </div>
-
-    </div>
   </div>
 </section>
 
