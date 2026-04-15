@@ -455,6 +455,87 @@
     .day-detail .card-list { gap: 8px; }
     .day-detail .card { padding: 12px; }
 
+    /* コミュニティセクション */
+    #community-section {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      padding: 0 20px;
+    }
+    .community-header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      transition: border-color 0.2s;
+      user-select: none;
+    }
+    .community-header:hover { border-color: var(--accent); }
+    #community-toggle-icon { color: var(--muted); transition: transform 0.2s; font-size: 0.75rem; }
+    #community-toggle-icon.open { transform: rotate(180deg); }
+
+    #community-body {
+      display: none;
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 20px;
+      background: rgba(26,26,46,0.6);
+    }
+    #community-body.open { display: block; }
+    .community-header.open { border-radius: 12px 12px 0 0; }
+    .community-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.7;
+    }
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 700px) {
+      .community-grid { grid-template-columns: 1fr; }
+    }
+    .community-col-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .community-link {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.15s;
+      margin-bottom: 4px;
+    }
+    .community-link:hover { background: rgba(0,212,255,0.07); }
+    .cl-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .cl-desc {
+      font-size: 0.73rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
     @media (max-width: 600px) {
       .filter-bar { gap: 8px; }
       .form-row { flex-direction: column; gap: 0; }
@@ -526,6 +607,75 @@
     </div>
   </div>
 </main>
+
+<!-- コミュニティリンクセクション -->
+<section id="community-section">
+  <div class="community-header" onclick="toggleCommunity()">
+    <span>🌐 大会情報コミュニティ・リンク集</span>
+    <span id="community-toggle-icon">▼</span>
+  </div>
+  <div id="community-body">
+    <p class="community-desc">
+      日本のFortnite大会情報は有志のコミュニティで共有されています。<br>
+      気になる大会を見つけたら「手動追加」でこのサイトに登録できます。
+    </p>
+    <div class="community-grid">
+
+      <div class="community-col">
+        <div class="community-col-title">🏆 大会プラットフォーム</div>
+        <a class="community-link" href="https://logstare.j-cg.com/fortnite/" target="_blank" rel="noopener">
+          <span class="cl-name">LogStare eSPORTS（JCG）</span>
+          <span class="cl-desc">日本最大級のeスポーツ大会プラットフォーム。Fortniteの国内大会を定期開催</span>
+        </a>
+        <a class="community-link" href="https://tonamel.com" target="_blank" rel="noopener">
+          <span class="cl-name">Tonamel</span>
+          <span class="cl-desc">個人・コミュニティ主催の日本語大会プラットフォーム。草の根大会が多数</span>
+        </a>
+        <a class="community-link" href="https://www.start.gg/games/fortnite/events" target="_blank" rel="noopener">
+          <span class="cl-name">Start.gg</span>
+          <span class="cl-desc">このサイトが自動収集しているグローバル大会プラットフォーム</span>
+        </a>
+        <a class="community-link" href="https://www.faceit.com/ja/games/fortnite" target="_blank" rel="noopener">
+          <span class="cl-name">FACEIT</span>
+          <span class="cl-desc">このサイトが自動収集しているオンライン競技プラットフォーム</span>
+        </a>
+      </div>
+
+      <div class="community-col">
+        <div class="community-col-title">🐦 X（Twitter）</div>
+        <a class="community-link" href="https://x.com/fortnitejp" target="_blank" rel="noopener">
+          <span class="cl-name">@FortniteJP</span>
+          <span class="cl-desc">フォートナイト日本公式アカウント。大会・イベント情報を随時発信</span>
+        </a>
+        <a class="community-link" href="https://x.com/FNCompetitive" target="_blank" rel="noopener">
+          <span class="cl-name">@FNCompetitive</span>
+          <span class="cl-desc">フォートナイト競技公式。FNCS等の公式大会情報</span>
+        </a>
+        <a class="community-link" href="https://twitter.com/fortnitejpnews" target="_blank" rel="noopener">
+          <span class="cl-name">@fortnitejpnews</span>
+          <span class="cl-desc">日本語のFortniteニュース・大会情報</span>
+        </a>
+      </div>
+
+      <div class="community-col">
+        <div class="community-col-title">💬 Discord</div>
+        <a class="community-link" href="https://discord.com/invite/fortnite" target="_blank" rel="noopener">
+          <span class="cl-name">Fortnite 公式Discord</span>
+          <span class="cl-desc">160万人以上が参加。競技・LFG・最新情報チャンネルあり</span>
+        </a>
+        <a class="community-link" href="https://discord.com/invite/fortnitejp" target="_blank" rel="noopener">
+          <span class="cl-name">Fortnite JP Discord</span>
+          <span class="cl-desc">日本語メインのフォートナイトコミュニティ</span>
+        </a>
+        <a class="community-link" href="https://www.fortnite.com/competitive/schedule?region=ASIA" target="_blank" rel="noopener">
+          <span class="cl-name">公式競技スケジュール（ASIA）</span>
+          <span class="cl-desc">Epic公式のアジアリージョン競技スケジュール一覧</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <!-- 手動追加モーダル -->
 <div class="modal-overlay" id="modal">
@@ -653,16 +803,21 @@
     }
     if (age) {
       const a = parseInt(age);
-      result = result.filter(t =>
-        t.events.length === 0 || t.events.some(e => e.minAge == null || e.minAge <= a)
-      );
+      // eventsデータがある場合のみ年齢フィルターを適用。
+      // eventsが空（=年齢情報なし）の大会は「不明として通過」させる
+      result = result.filter(t => {
+        const eventsWithAge = t.events.filter(e => e.minAge != null);
+        if (eventsWithAge.length === 0) return true; // 年齢情報なし→通過
+        return eventsWithAge.some(e => e.minAge <= a);
+      });
       activeFilters.push(`${age}歳以下対応`);
     }
     if (days) {
       const d = parseInt(days);
       const limit = Math.floor(Date.now() / 1000) + d * 86400;
       const now = Math.floor(Date.now() / 1000);
-      result = result.filter(t => t.startAt >= now && t.startAt <= limit);
+      // startAt=0（日時未定）は日付フィルターから除外
+      result = result.filter(t => t.startAt > 0 && t.startAt >= now && t.startAt <= limit);
       activeFilters.push(`${days}日以内`);
     }
 
@@ -957,7 +1112,7 @@
   // ユーティリティ
   // ==============================
   function formatDate(ts) {
-    if (!ts) return '日時未定';
+    if (!ts || ts === 0) return '📅 日時未定';
     const d = new Date(ts * 1000);
     return d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
@@ -1021,6 +1176,18 @@
   document.getElementById('modal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
   });
+
+  // ==============================
+  // コミュニティリンク開閉
+  // ==============================
+  function toggleCommunity() {
+    const body = document.getElementById('community-body');
+    const icon = document.getElementById('community-toggle-icon');
+    const header = document.querySelector('.community-header');
+    const isOpen = body.classList.toggle('open');
+    icon.classList.toggle('open', isOpen);
+    header.classList.toggle('open', isOpen);
+  }
 </script>
 </body>
 </html>

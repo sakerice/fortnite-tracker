@@ -140,8 +140,13 @@ async function handleGetTournaments(url: URL, env: Env): Promise<Response> {
     tournaments = tournaments.filter(t => t.startAt >= fromTs);
   }
 
-  // 開催日昇順でソート
-  tournaments.sort((a, b) => a.startAt - b.startAt);
+  // 開催日昇順。startAt=0（日時未定）は末尾
+  tournaments.sort((a, b) => {
+    if (a.startAt === 0 && b.startAt === 0) return 0;
+    if (a.startAt === 0) return 1;
+    if (b.startAt === 0) return -1;
+    return a.startAt - b.startAt;
+  });
 
   return json({ tournaments, total: tournaments.length, lastUpdated });
 }
