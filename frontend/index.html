@@ -65,12 +65,14 @@
     /* フィルターバー */
     .filter-bar {
       background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       align-items: center;
+      margin-bottom: 14px;
     }
     .filter-chip {
       display: flex;
@@ -516,6 +518,17 @@
       margin-bottom: 12px;
       line-height: 1.7;
     }
+    .inline-link {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: inherit;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .inline-link:hover { opacity: 0.8; }
     .community-notice {
       font-size: 0.8rem;
       color: #fbbf24;
@@ -594,32 +607,6 @@
   ⚠️ 日本においては、各プラットフォーム・コミュニティにおけるFortnite専用の情報は少ない傾向。自動取得できた大会情報は最下部にリスト&amp;カレンダーで掲示、その他は情報掲示がされ得るコミュニティのリンクを掲載（見つけた情報を最下部のリストに登録可能）
 </div>
 
-<div class="filter-bar">
-  <label class="filter-chip" id="chip-online">
-    <input type="checkbox" onchange="applyFilters()">
-    🌐 オンラインのみ
-  </label>
-  <label class="filter-chip" id="chip-prize">
-    <input type="checkbox" onchange="applyFilters()">
-    🏆 賞金あり
-  </label>
-  <label class="filter-chip" id="chip-japan">
-    <input type="checkbox" onchange="applyFilters()">
-    🇯🇵 日本開催
-  </label>
-  <select class="filter-select" id="ageFilter" onchange="applyFilters()">
-    <option value="">年齢制限なし</option>
-    <option value="18">高校生以下（18歳）対応</option>
-    <option value="20">成人（20歳）以下対応</option>
-  </select>
-  <select class="filter-select" id="dateFilter" onchange="applyFilters()">
-    <option value="">期間: すべて</option>
-    <option value="7">今後7日間</option>
-    <option value="30">今後30日間</option>
-    <option value="90">今後3ヶ月</option>
-  </select>
-  <button id="addBtn" onclick="openModal()">＋ 手動追加</button>
-</div>
 
 <!-- コミュニティリンクセクション -->
 <section id="community-section">
@@ -629,7 +616,7 @@
   <div id="community-body" class="open">
     <p class="community-desc">
       日本のFortnite大会情報は有志のコミュニティで共有されています。<br>
-      気になる大会を見つけたら「手動追加」でこのサイトに登録できます。
+      気になる大会を見つけたら以下カレンダーに<button class="inline-link" onclick="openModal()">手動追加</button>でも登録できます。
     </p>
     <div class="community-grid">
 
@@ -691,6 +678,30 @@
 
 <main>
   <h2 class="section-title">📋 自動取得できた大会情報</h2>
+
+  <div class="filter-bar">
+    <label class="filter-chip" id="chip-online">
+      <input type="checkbox" onchange="applyFilters()">
+      🌐 オンラインのみ
+    </label>
+    <label class="filter-chip" id="chip-japan">
+      <input type="checkbox" onchange="applyFilters()">
+      🇯🇵 日本開催
+    </label>
+    <select class="filter-select" id="ageFilter" onchange="applyFilters()">
+      <option value="">年齢制限なし</option>
+      <option value="18">高校生以下（18歳）対応</option>
+      <option value="20">成人（20歳）以下対応</option>
+    </select>
+    <select class="filter-select" id="dateFilter" onchange="applyFilters()">
+      <option value="">期間: すべて</option>
+      <option value="7">今後7日間</option>
+      <option value="30">今後30日間</option>
+      <option value="90">今後3ヶ月</option>
+    </select>
+    <button id="addBtn" onclick="openModal()">＋ 手動追加</button>
+  </div>
+
   <div class="status-bar">
     <span><span class="count" id="countLabel">-</span> 件の大会</span>
     <span id="filterLabel"></span>
@@ -801,20 +812,17 @@
   // ==============================
   function applyFilters() {
     const chipOnline = document.getElementById('chip-online');
-    const chipPrize = document.getElementById('chip-prize');
     const ageEl = document.getElementById('ageFilter');
     const dateEl = document.getElementById('dateFilter');
 
     const chipJapan  = document.getElementById('chip-japan');
     const wantOnline = chipOnline.querySelector('input').checked;
-    const wantPrize  = chipPrize.querySelector('input').checked;
     const wantJapan  = chipJapan.querySelector('input').checked;
     const age = ageEl.value;
     const days = dateEl.value;
 
     // chip スタイル更新
     chipOnline.classList.toggle('active', wantOnline);
-    chipPrize.classList.toggle('active', wantPrize);
     chipJapan.classList.toggle('active', wantJapan);
 
     const nowTs = Math.floor(Date.now() / 1000);
@@ -830,10 +838,6 @@
     if (wantOnline) {
       result = result.filter(t => t.isOnline);
       activeFilters.push('オンラインのみ');
-    }
-    if (wantPrize) {
-      result = result.filter(t => t.prizePools?.some(p => p.totalAmount > 0));
-      activeFilters.push('賞金あり');
     }
     if (wantJapan) {
       result = result.filter(t => !t.isOnline && t.countryCode === 'JP');
@@ -921,7 +925,7 @@
             ${e.minAge ? `<span class="age-badge">${e.minAge}歳以上</span>` : ''}
             ${e.numEntrants ? `<span>・${e.numEntrants}人参加</span>` : ''}
           </div>`).join('')}
-          ${t.events.length > 3 ? `<div class="event-row" style="color:var(--muted)">他 ${t.events.length - 3} イベント...</div>` : ''}
+          ${t.events.length > 3 ? `<div class="event-row" style="color:var(--muted)">他 ${t.events.length - 3} イベント... <span style="font-size:0.68rem;color:var(--muted)">※Fortnite以外の大会も含む場合あり</span></div>` : ''}
         </div>` : '';
 
     const deleteBtn = isManual

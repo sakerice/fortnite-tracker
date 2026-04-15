@@ -108,8 +108,8 @@ export async function fetchFortniteTournaments(
   apiToken: string,
   gameId = '1095'
 ): Promise<Tournament[]> {
-  // 昨日からに広げる（今日開始の大会を取りこぼさないため）
-  const afterDate = Math.floor((Date.now() - 86_400_000) / 1000);
+  // 30日前まで遡る（開始済みでも進行中の大会を取りこぼさないため）
+  const afterDate = Math.floor((Date.now() - 30 * 86_400_000) / 1000);
 
   // クエリ1: グローバル全件
   const globalQuery = buildQuery(gameId);
