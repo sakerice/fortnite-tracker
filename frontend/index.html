@@ -330,9 +330,137 @@
       margin-bottom: 16px;
     }
 
+    /* ビュー切替 */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .view-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 5px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .view-btn.active {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* カレンダー */
+    .calendar-wrap { user-select: none; }
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cal-nav-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s;
+    }
+    .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .cal-month-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      padding: 6px 0;
+      font-weight: 600;
+    }
+    .cal-dow:first-child { color: #f87171; }
+    .cal-dow:last-child  { color: #60a5fa; }
+    .cal-day {
+      min-height: 72px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px;
+      transition: border-color 0.15s;
+      cursor: default;
+    }
+    .cal-day.other-month { opacity: 0.3; }
+    .cal-day.today { border-color: var(--accent); }
+    .cal-day.has-events { cursor: pointer; }
+    .cal-day.has-events:hover { border-color: var(--accent2); }
+    .cal-day-num {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .cal-day.today .cal-day-num {
+      color: var(--accent);
+    }
+    .cal-dot {
+      font-size: 0.65rem;
+      line-height: 1.4;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cal-dot.online  { background: rgba(52,211,153,0.15); color: var(--online); }
+    .cal-dot.offline { background: rgba(248,113,113,0.15); color: var(--offline); }
+    .cal-dot.more    { color: var(--muted); font-size: 0.6rem; }
+
+    /* 日別ポップオーバー */
+    .day-detail {
+      background: var(--card);
+      border: 1px solid var(--accent2);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .day-detail h3 {
+      font-size: 0.9rem;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .day-detail .card-list { gap: 8px; }
+    .day-detail .card { padding: 12px; }
+
     @media (max-width: 600px) {
       .filter-bar { gap: 8px; }
       .form-row { flex-direction: column; gap: 0; }
+      .cal-day { min-height: 52px; padding: 4px; }
+      .cal-dot { display: none; }
+      .cal-day.has-events::after {
+        content: '●';
+        display: block;
+        color: var(--accent2);
+        font-size: 0.5rem;
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -377,6 +505,10 @@
   <div class="status-bar">
     <span><span class="count" id="countLabel">-</span> 件の大会</span>
     <span id="filterLabel"></span>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-list" onclick="setView('list')">☰ リスト</button>
+      <button class="view-btn" id="btn-calendar" onclick="setView('calendar')">📅 カレンダー</button>
+    </div>
   </div>
   <div id="content">
     <div class="loading">
@@ -440,6 +572,10 @@
   // ==============================
   let allTournaments = [];
   let filters = { online: false, prize: false, age: '', days: '' };
+  let currentView = 'list';  // 'list' | 'calendar'
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth(); // 0-based
+  let selectedDay = null;    // クリックした日付 (Date object)
 
   // ==============================
   // 初期化
@@ -518,7 +654,22 @@
     document.getElementById('filterLabel').textContent =
       activeFilters.length ? `フィルター: ${activeFilters.join(' / ')}` : '';
 
-    renderCards(result);
+    if (currentView === 'calendar') {
+      renderCalendar(result);
+    } else {
+      renderCards(result);
+    }
+  }
+
+  // ==============================
+  // ビュー切替
+  // ==============================
+  function setView(v) {
+    currentView = v;
+    document.getElementById('btn-list').classList.toggle('active', v === 'list');
+    document.getElementById('btn-calendar').classList.toggle('active', v === 'calendar');
+    selectedDay = null;
+    applyFilters();
   }
 
   // ==============================
@@ -583,6 +734,132 @@
       </div>
       ${eventsHTML}
     </div>`;
+  }
+
+  // ==============================
+  // カレンダー描画
+  // ==============================
+  function renderCalendar(tournaments) {
+    const el = document.getElementById('content');
+
+    // 大会を日付キー (YYYY-MM-DD) でグループ化
+    const byDay = {};
+    for (const t of tournaments) {
+      const d = new Date(t.startAt * 1000);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      (byDay[key] = byDay[key] || []).push(t);
+    }
+
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    // カレンダーグリッド生成
+    const firstDay = new Date(calYear, calMonth, 1);
+    const lastDay  = new Date(calYear, calMonth + 1, 0);
+    // 週の始まり: 日曜 (0)
+    const startOffset = firstDay.getDay();
+
+    const DOWS = ['日','月','火','水','木','金','土'];
+    let daysHTML = DOWS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+    // 前月の埋め
+    for (let i = 0; i < startOffset; i++) {
+      const d = new Date(calYear, calMonth, -startOffset + i + 1);
+      daysHTML += dayCell(d, byDay, todayKey, true);
+    }
+    // 当月
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      const d = new Date(calYear, calMonth, i);
+      daysHTML += dayCell(d, byDay, todayKey, false);
+    }
+    // 翌月の埋め（6行になるよう調整）
+    const total = startOffset + lastDay.getDate();
+    const remaining = (7 - (total % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const d = new Date(calYear, calMonth + 1, i);
+      daysHTML += dayCell(d, byDay, todayKey, true);
+    }
+
+    const monthLabel = new Date(calYear, calMonth, 1)
+      .toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
+
+    // 選択日の詳細
+    let detailHTML = '';
+    if (selectedDay) {
+      const key = `${selectedDay.getFullYear()}-${String(selectedDay.getMonth()+1).padStart(2,'0')}-${String(selectedDay.getDate()).padStart(2,'0')}`;
+      const ts = byDay[key] || [];
+      if (ts.length) {
+        const label = selectedDay.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+        detailHTML = `<div class="day-detail">
+          <h3>📅 ${label} の大会 (${ts.length}件)</h3>
+          <div class="card-list">${ts.map(cardHTML).join('')}</div>
+        </div>`;
+      }
+    }
+
+    el.innerHTML = `
+      <div class="calendar-wrap">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
+          <span class="cal-month-label">${monthLabel}</span>
+          <button class="cal-nav-btn" onclick="calMove(1)">›</button>
+        </div>
+        <div class="cal-grid">${daysHTML}</div>
+        ${detailHTML}
+      </div>`;
+  }
+
+  function dayCell(date, byDay, todayKey, otherMonth) {
+    const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const ts = byDay[key] || [];
+    const isToday = key === todayKey;
+    const hasEvents = ts.length > 0;
+    const isSelected = selectedDay && key === `${selectedDay.getFullYear()}-${String(selectedDay.getMonth()+1).padStart(2,'0')}-${String(selectedDay.getDate()).padStart(2,'0')}`;
+
+    const classes = [
+      'cal-day',
+      otherMonth ? 'other-month' : '',
+      isToday ? 'today' : '',
+      hasEvents ? 'has-events' : '',
+      isSelected ? 'selected-day' : '',
+    ].filter(Boolean).join(' ');
+
+    const onclick = hasEvents ? `onclick="selectDay(${date.getFullYear()},${date.getMonth()},${date.getDate()})"` : '';
+
+    // ドット（大会名）最大2件 + more
+    const dots = ts.slice(0, 2).map(t =>
+      `<div class="cal-dot ${t.isOnline ? 'online' : 'offline'}" title="${escHtml(t.name)}">${escHtml(t.name)}</div>`
+    ).join('');
+    const more = ts.length > 2 ? `<div class="cal-dot more">+${ts.length - 2} 件</div>` : '';
+
+    return `<div class="${classes}" ${onclick} style="${isSelected ? 'border-color:var(--accent2);background:rgba(124,58,237,0.08)' : ''}">
+      <div class="cal-day-num">${date.getDate()}</div>
+      ${dots}${more}
+    </div>`;
+  }
+
+  function calMove(delta) {
+    calMonth += delta;
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    if (calMonth > 11) { calMonth = 0;  calYear++; }
+    selectedDay = null;
+    applyFilters();
+  }
+
+  function selectDay(y, m, d) {
+    const clicked = new Date(y, m, d);
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    // 同じ日をもう一度クリックで解除
+    if (selectedDay && selectedDay.getTime() === clicked.getTime()) {
+      selectedDay = null;
+    } else {
+      selectedDay = clicked;
+    }
+    applyFilters();
+    // 詳細へスクロール
+    if (selectedDay) {
+      setTimeout(() => document.querySelector('.day-detail')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
   }
 
   // ==============================
